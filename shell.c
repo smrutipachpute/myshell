@@ -13,14 +13,12 @@ char custom_path[MAX_INPUT] = "/usr/bin:/bin:/sbin";
 char prompt[MAX_INPUT] = "\\w$ ";
 
 void updatePrompt() {
-	if (strcmp(prompt, "\\w$ ") == 0) {
-		char cwd[PATH_MAX];
-		if (getcwd(cwd, sizeof(cwd))) {
-			snprintf(prompt, sizeof(prompt), "%s$ ", cwd);
-		}
-		else {
-			perror("getcwd");
-		}
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd))) {
+		snprintf(prompt, sizeof(prompt), "%s$ ", cwd);
+	}
+	else {
+		perror("getcwd");
 	}
 }
 
@@ -61,6 +59,9 @@ void executeCommand(char *cmd, char **args) {
 	}
 	else if (pid > 0) {
 		wait(NULL);
+	}
+	else {
+		perror("fork\n");
 	}
 }
 
@@ -124,6 +125,9 @@ void handleRedirection(char *input) {
 		if (out_fd >= 0)
 			close(out_fd);
 		wait(NULL);
+	}
+	else {
+		perror("fork");
 	}
 }
 
