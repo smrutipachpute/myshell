@@ -11,14 +11,19 @@
 
 char custom_path[MAX_INPUT] = "/usr/bin:/bin:/sbin";
 char prompt[MAX_INPUT] = "\\w$ ";
+int isCustomPrompt = 0;
 
 void updatePrompt() {
+	if (isCustomPrompt) {
+		return;
+	}
 	char cwd[PATH_MAX];
 	if (getcwd(cwd, sizeof(cwd))) {
 		snprintf(prompt, sizeof(prompt), "%s$ ", cwd);
 	}
 	else {
 		perror("getcwd");
+		strcpy(prompt, "$ ");
 	}
 }
 
@@ -144,13 +149,19 @@ void handle_cd(char **args) {
 int main() {
 	char input[MAX_INPUT];
 	while(1) {
-		updatePrompt();
+		if (!isCustomPrompt) {
+			updatePrompt();
+		}
+	
 		printf("%s",prompt);
+		fflush(stdout);
+		
 		if (fgets(input, MAX_INPUT, stdin) == NULL) {
 			printf("\n");
 			break;
 		}
 		input[strcspn(input, "\n")] = 0;
+		
 		if (strcmp(input, "exit") == 0) {
 			break;
 		}
@@ -159,19 +170,22 @@ int main() {
 			continue;
 		}
 		if (strncmp(input, "PS1=", 4) == 0) {
-			char *newPrompt = strchr(input, "=") + 1;
-			if (newPrompt) {
-				if (strcmp(newPrompt, "\"\\w$\"") == 0) {
-					strcpy(prompt, "\\w$ ");
-				}
-				else {
-					snprintf(prompt, sizeof(prompt), "%s ", newPrompt + 1);
-					size_t len = strlen(prompt);
-					if (len > 0 && prompt[len - 1] == '"') {
-						prompt[len - 1] = '\0';
-					}
-				}
+			char *newPrompt = strchr(input, '=') + 1;
+			size_t len = strlen(newPrompt);
+
+			if (newPrompt[0] == '"'   && newPrompt[len - 1] == '"') {
+			newPrompt[len - 1] = '\0';
+			newPrompt++;
 			}
+
+			snprintf(prompt, sizeof(prompt), "%s ", newPrompt);
+			isCustomPrompt = 1;
+			continue;
+		}
+		
+		if (strncmp(input, "resetPS1", 8) == 0) {
+			isCustomPrompt = 0;
+			updatePrompt();
 			continue;
 		}
 		
